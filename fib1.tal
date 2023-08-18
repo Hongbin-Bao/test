@@ -1,32 +1,46 @@
-( Fibonacci:
-	A series of numbers where the next number 
-	is made of the two numbers before it )
+( Fibonacci: Numbers made of the two numbers before it )
 
-|0100 ( -> ) @reset
+|0100
 
-#ffff #0000
-&iterate
-	#0000 INC2k ADD2k
-	&loop
-		( print ) DUP2 ,print JSR
-		( linebreak ) #0a18 DEO
-		ADD2k LTH2k ,&loop JCN
+@on-reset
+	#0019 #0001
+	&l ( -- )
+		( index ) DUP2 pdec
+		( recursive ) DUP2 fib pdec
+		( tail-recursive ) DUP2 #0000 #0001 ROT2 fibr pdec
+		( lb )
+		POP2 POP2 INC2 GTH2k ?&l
+	POP2 POP2
+	( end ) #800f DEO
+	BRK
 
- 
-&cleanup
-POP2
-ORA ,&cleanup JCN
+(
+@|recursive )
 
-INC2 GTH2k ,&iterate JCN
+@fib ( num* -- numfib* )
+	#0001 GTH2k ?&>ok
+		POP2 JMP2r &>ok
+	SUB2k fib STH2
+	INC2 SUB2 fib STH2r
+	ADD2 JMP2r
 
-	( halt ) #010f DEO
+(
+@|tail-recursive )
 
-BRK
+@fibr ( a* b* num* -- a* b* numfib* )
+	#0001 NEQ2k ?&>no-1
+		POP2 POP2 DUP2 JMP2r &>no-1
+	SUB2 STH2
+	SWP2 OVR2 ADD2 STH2r !fibr
 
-@print ( short* -- )
+(
+@|stdlib )
 
-	SWP ,&byte JSR
-	&byte ( byte -- ) DUP #04 SFT ,&char JSR
-	&char ( char -- ) #0f AND DUP #09 GTH #27 MUL ADD #30 ADD #18 DEO
-
-JMP2r
+@pdec ( short* -- )
+	#2710 LIT2r 00fb
+	&w ( -- )
+		DIV2k #000a DIV2k MUL2 SUB2 SWPr EQUk OVR STHkr EQU AND ?&>skip
+			DUP LIT "0 ADD POP
+			INCr &>skip
+		POP2 #000a DIV2 SWPr INCr STHkr ?&w
+	POP2r POP2 POP2 JMP2r
